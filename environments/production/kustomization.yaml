@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rightproperty-production
+resources:
+  - ../../base
+  - ingress.yaml
+images:
+  - name: rightproperty-frontend
+    newName: ghcr.io/example/replace-frontend
+    newTag: pending
+  - name: rightproperty-api
+    newName: ghcr.io/example/replace-api
+    newTag: pending
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: APP_ENV
+            value: production
+          - name: WEB_BASE_URL
+            value: https://rightproperty365.com
+          - name: CORS_ALLOWED_ORIGINS
+            value: https://rightproperty365.com
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: api-database
+                key: DATABASE_URL
