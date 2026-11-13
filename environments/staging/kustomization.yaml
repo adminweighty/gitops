@@ -4,6 +4,7 @@ namespace: rightproperty-staging
 resources:
   - ../../base
   - ingress.yaml
+  - postgres.yaml
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend

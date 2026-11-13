@@ -8,6 +8,7 @@ Argo CD source for RightProperty365 staging and production. The application repo
 - The API requires a Kubernetes Secret named `api-database` in each namespace containing `DATABASE_URL`, and requires migrations before use. Do not put credentials in this repository.
 - Traefik provides ingress. Host Nginx terminates TLS and forwards to the ingress controller.
 - The Kubernetes control plane must be able to pull the images. The currently published dev images were accessible anonymously at initialization.
-- Both application workflows currently reference the former `adminweighty/weightygitops` repository. Update them to `adminweighty/gitops` and configure a `GITOPS_TOKEN` with write access before automated updates can work.
+- Both application `dev` workflows reference `adminweighty/gitops`. Configure a `GITOPS_TOKEN` with write access in each application repository before automated updates can work.
+- Staging PostgreSQL runs only inside the staging namespace and persists data on this VM at `/var/lib/rightproperty/staging-postgres`. Its `postgres-credentials` Secret and the API `api-database` Secret must be provisioned separately; protect and back up the volume and secrets. This single-node hostPath is not highly available.
 
-Validate with `kubectl kustomize environments/staging` and `kubectl kustomize environments/production`. The default GitOps manifests deliberately do not include database passwords, database provisioning, or migration automation.
+Validate with `kubectl kustomize environments/staging` and `kubectl kustomize environments/production`. The GitOps manifests do not include database passwords or automated migrations. Run and verify backend migrations before starting a newly initialized API database.
