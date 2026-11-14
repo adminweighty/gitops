@@ -4,6 +4,7 @@ namespace: rightproperty-production
 resources:
   - ../../base
   - ingress.yaml
+  - migration.yaml
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/example/replace-frontend
