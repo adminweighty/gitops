@@ -7,19 +7,20 @@ resources:
   - postgres.yaml
   - elasticsearch.yaml
   - minio.yaml
+  - worker.yaml
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
     newTag: sha-f0b5e3c055a674be04487f54e5a4266df2a18227
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-1513bb08dc7381237a7755398393e5f83efb5816
+    newTag: sha-1c7b5fc181d9a487623c3477dc0e6a913719904e
 patches:
   - target:
       group: apps
       version: v1
       kind: Deployment
-      name: api
+      name: (api|worker)
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/env

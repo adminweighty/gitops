@@ -1,0 +1,63 @@
+# Background worker and database migrations for staging. Both run from the
+# API image, which also carries /app/worker, /app/migrate, /app/reindex and
+# /app/adminctl. Their environment is added by the same patch as the API's in
+# kustomization.yaml (it targets the api and worker Deployments).
+#
+# The worker processes the outbox: notification emails and search indexing.
+# Keep it at one replica; it is not set up for partitioned work.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: rightproperty-api
+          command: ["/app/worker"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+---
+# Applies pending database migrations before each sync, so a new API version
+# never starts against an older schema. `migrate up` takes an advisory lock and
+# does nothing when there is nothing to apply. If it fails, the sync stops and
+# the running API is left as it was.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: rightproperty-api
+          command: ["/app/migrate", "up"]
+          env:
+            - name: APP_ENV
+              value: staging
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-database
+                  key: DATABASE_URL
