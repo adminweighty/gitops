@@ -53,27 +53,33 @@ patches:
               secretKeyRef:
                 name: elasticsearch-credentials
                 key: ELASTICSEARCH_API_KEY
-          # Uploaded files (onboarding documents) go to MinIO (environments/staging/minio.yaml).
+          # Uploaded files use the private AWS S3 bucket. Credentials are provisioned outside Git.
           - name: STORAGE_DRIVER
             value: s3
           - name: S3_ENDPOINT
-            value: http://minio:9000
+            value: https://s3.eu-north-1.amazonaws.com
           - name: S3_BUCKET
-            value: rightproperty-staging-private
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_S3_BUCKET
           - name: S3_REGION
-            value: us-east-1
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_REGION
           - name: S3_USE_PATH_STYLE
             value: "true"
           - name: S3_ACCESS_KEY
             valueFrom:
               secretKeyRef:
-                name: minio-credentials
-                key: S3_ACCESS_KEY
+                name: aws-s3-credentials
+                key: AWS_ACCESS_KEY_ID
           - name: S3_SECRET_KEY
             valueFrom:
               secretKeyRef:
-                name: minio-credentials
-                key: S3_SECRET_KEY
+                name: aws-s3-credentials
+                key: AWS_SECRET_ACCESS_KEY
           # Links in emails and logo URLs. WEB_BASE_URL above is the older name for the same setting.
           - name: PUBLIC_WEB_URL
             value: https://staging.rightproperty365.com

@@ -39,3 +39,24 @@ patches:
               secretKeyRef:
                 name: api-database
                 key: DATABASE_URL
+          # AWS credentials are provisioned separately; production storage is not yet configured.
+          - name: AWS_REGION
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_REGION
+          - name: AWS_S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_S3_BUCKET
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aws-s3-credentials
+                key: AWS_SECRET_ACCESS_KEY
