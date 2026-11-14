@@ -28,7 +28,11 @@ patches:
           - name: CORS_ALLOWED_ORIGINS
             value: https://rightproperty365.com
           - name: RESEND_API_KEY
-            value: re_dCwt93Yn_BSSe1sjXHAMRzy91tFyHbxGb
+            valueFrom:
+              secretKeyRef:
+                name: resend-credentials
+                key: RESEND_API_KEY
+                optional: true
           - name: DATABASE_URL
             valueFrom:
               secretKeyRef:
