@@ -1,0 +1,101 @@
+# Single-node Elasticsearch for staging listing search.
+#
+# - Reachable only inside the cluster (ClusterIP); it has no Ingress.
+# - Security is on. The `elastic` superuser password comes from the Secret
+#   `elasticsearch-credentials` (key ELASTIC_PASSWORD), created on the cluster
+#   and never stored in this repository. The API does not use that password:
+#   it uses a scoped API key from the same Secret (key ELASTICSEARCH_API_KEY).
+# - HTTP inside the cluster is not TLS-encrypted (single node, same host).
+#   Turn TLS on before Elasticsearch is ever reached from another host.
+# - Data is kept on this VM at /var/lib/rightproperty/staging-elasticsearch
+#   (owned by uid 1000). Like staging PostgreSQL, a single-node hostPath is
+#   not highly available and is not backed up by anything in this repository.
+# - PostgreSQL remains the source of truth. The index can always be rebuilt
+#   with the backend's `reindex` command.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 0
+        fsGroup: 0
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.5.6
+          env:
+            - name: cluster.name
+              value: rightproperty-staging
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "true"
+            - name: xpack.security.http.ssl.enabled
+              value: "false"
+            - name: xpack.security.transport.ssl.enabled
+              value: "false"
+            - name: xpack.license.self_generated.type
+              value: basic
+            - name: ES_JAVA_OPTS
+              value: "-Xms2g -Xmx2g"
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-credentials
+                  key: ELASTIC_PASSWORD
+          ports:
+            - name: http
+              containerPort: 9200
+          resources:
+            requests:
+              cpu: 500m
+              memory: 3Gi
+            limits:
+              memory: 4Gi
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: data
+          hostPath:
+            path: /var/lib/rightproperty/staging-elasticsearch
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  type: ClusterIP
+  selector:
+    app: elasticsearch
+  ports:
+    - name: http
+      port: 9200
+      targetPort: http

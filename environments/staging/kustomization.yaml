@@ -5,6 +5,7 @@ resources:
   - ../../base
   - ingress.yaml
   - postgres.yaml
+  - elasticsearch.yaml
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
