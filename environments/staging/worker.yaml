@@ -4,13 +4,13 @@
 # kustomization.yaml (it targets the api and worker Deployments).
 #
 # The worker processes the outbox: notification emails and search indexing.
-# Keep it at one replica; it is not set up for partitioned work.
+# Workers lease outbox events using PostgreSQL row locks; delivery is at least once.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: Recreate
   selector:
