@@ -1,0 +1,104 @@
+# Single-node MinIO (S3-compatible object storage) for staging uploads, such
+# as onboarding documents.
+#
+# - Image: the community MinIO build published by Chainguard, pinned by digest
+#   (MinIO RELEASE.2026-11-12). MinIO Inc. no longer publishes free server
+#   images; its own image is the licensed AIStor product. Update the digest
+#   deliberately, not by floating a tag.
+# - Reachable only inside the cluster (ClusterIP); it has no Ingress. Files are
+#   private and are served only through the API's authenticated routes.
+# - Credentials come from the Secret `minio-credentials`, created on the
+#   cluster and never stored in this repository: MINIO_ROOT_USER and
+#   MINIO_ROOT_PASSWORD (administrator), S3_ACCESS_KEY and S3_SECRET_KEY (the
+#   API's own user).
+# - Data is kept on this VM at /var/lib/rightproperty/staging-minio (owned by
+#   uid 65532). A single-node hostPath is not highly available and nothing in
+#   this repository backs it up.
+# - Not set up: TLS inside the cluster, versioning, lifecycle and retention
+#   rules, malware scanning, monitoring.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: minio
+          image: cgr.dev/chainguard/minio@sha256:0f9fda72fbc6bd3560ea903aec2ceefa20f6ba82628d67656f37fb370c39ae9c
+          args: ["server", "/data", "--console-address", ":9001"]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: MINIO_ROOT_PASSWORD
+          ports:
+            - name: s3
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /minio/health/live
+              port: s3
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: s3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: s3
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          hostPath:
+            path: /var/lib/rightproperty/staging-minio
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+spec:
+  type: ClusterIP
+  selector:
+    app: minio
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+    - name: console
+      port: 9001
+      targetPort: console

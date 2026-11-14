@@ -6,6 +6,7 @@ resources:
   - ingress.yaml
   - postgres.yaml
   - elasticsearch.yaml
+  - minio.yaml
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
@@ -51,3 +52,27 @@ patches:
               secretKeyRef:
                 name: elasticsearch-credentials
                 key: ELASTICSEARCH_API_KEY
+          # Uploaded files (onboarding documents) go to MinIO (environments/staging/minio.yaml).
+          - name: STORAGE_DRIVER
+            value: s3
+          - name: S3_ENDPOINT
+            value: http://minio:9000
+          - name: S3_BUCKET
+            value: rightproperty-staging-private
+          - name: S3_REGION
+            value: us-east-1
+          - name: S3_USE_PATH_STYLE
+            value: "true"
+          - name: S3_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-credentials
+                key: S3_ACCESS_KEY
+          - name: S3_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-credentials
+                key: S3_SECRET_KEY
+          # Links in emails and logo URLs. WEB_BASE_URL above is the older name for the same setting.
+          - name: PUBLIC_WEB_URL
+            value: https://staging.rightproperty365.com
