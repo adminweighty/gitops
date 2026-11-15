@@ -11,10 +11,10 @@ resources:
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
-    newTag: sha-1efeb941546421ca69428865359cfec786d4a392
+    newTag: sha-17bbfb137a167272810b35b3e1b697cfb3c432b9
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-173d1e6104d1117eff75a076f7ce979a193974ca
+    newTag: sha-598e53c52c48877fd36f4d77f5bbefa25e7d778c
 patches:
   - target:
       group: apps
@@ -36,6 +36,10 @@ patches:
         value:
           - name: APP_ENV
             value: staging
+          # Test site only: the sign-in code 1234 is also accepted. The API refuses to
+          # start with this set outside development and staging.
+          - name: AUTH_DEMO_CODE
+            value: "1234"
           - name: WEB_BASE_URL
             value: https://staging.rightproperty365.com
           - name: CORS_ALLOWED_ORIGINS
