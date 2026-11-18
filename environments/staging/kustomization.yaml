@@ -11,10 +11,10 @@ resources:
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
-    newTag: sha-762e5c41730491197bac10bb39417ca904befceb
+    newTag: sha-53e46d882b541132ead2780b8d60eadbf9249168
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-9652187c7e8b8256cf364365a38560074020dad9
+    newTag: sha-ccb9053adaae3ef8fd2dd7885a5d59d62d8cc60d
 patches:
   - target:
       group: apps
