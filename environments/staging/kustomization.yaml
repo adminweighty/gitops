@@ -11,7 +11,7 @@ resources:
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
-    newTag: sha-7e4c7c435068b0c47dce898962c8fcbd9d415629
+    newTag: sha-915e05a2a46be499aaf67870f85b41b715206211
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
     newTag: sha-87047097cddaba5a0a0ebbd9569f2fc123ac0cae
