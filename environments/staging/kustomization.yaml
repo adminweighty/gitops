@@ -11,10 +11,10 @@ resources:
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
-    newTag: sha-915e05a2a46be499aaf67870f85b41b715206211
+    newTag: sha-7dbc0b402ec590e7e554b7390bc0432213bb1319
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-87047097cddaba5a0a0ebbd9569f2fc123ac0cae
+    newTag: sha-ca207fcea7bd88aa867ef82d15240b798a6bfe91
 patches:
   - target:
       group: apps
@@ -55,6 +55,15 @@ patches:
               secretKeyRef:
                 name: api-database
                 key: DATABASE_URL
+          # Administrator MFA (API 0.40.0): AES-256-GCM key for the authenticator secrets,
+          # generated on the server; provisioned outside Git. ADMIN_MFA_REQUIRED stays at its
+          # staging default (false) until the administrators have enrolled.
+          - name: MFA_ENCRYPTION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: admin-mfa
+                key: MFA_ENCRYPTION_KEY
+                optional: true
           # Listing search uses Elasticsearch (environments/staging/elasticsearch.yaml).
           # The API falls back to PostgreSQL for a request if Elasticsearch fails.
           - name: SEARCH_DRIVER
