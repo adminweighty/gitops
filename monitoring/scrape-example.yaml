@@ -1,0 +1,25 @@
+# How Prometheus reaches the metrics (API 0.61.0). NOT APPLIED: an example.
+# The api and worker listen on METRICS_ADDR (":9090" on staging) inside the
+# pod only: there is no Service port and no ingress rule for it, so only
+# something inside the cluster (Prometheus) can scrape it.
+scrape_configs:
+  - job_name: rightproperty365-api
+    kubernetes_sd_configs: [{ role: pod, namespaces: { names: [rightproperty-staging] } }]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: api
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: "$1:9090"
+    metrics_path: /metrics
+  - job_name: rightproperty365-worker
+    kubernetes_sd_configs: [{ role: pod, namespaces: { names: [rightproperty-staging] } }]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: worker
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: __address__
+        replacement: "$1:9090"
+    metrics_path: /metrics

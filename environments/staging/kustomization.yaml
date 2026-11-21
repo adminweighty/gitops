@@ -11,10 +11,10 @@ resources:
 images:
   - name: rightproperty-frontend
     newName: ghcr.io/adminweighty/rightproperty365-frontend
-    newTag: sha-2eaece6077b2a2a921877d3e5284d60d42713eb9
+    newTag: sha-b858d42e35b9f172e7efc59a29bbe5833e35cadb
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-4ab63ad87eba34bdc00f8c3601e5ae36ea43586d
+    newTag: sha-8d2159a028f9cc666b8841fd1965c31f0b7a11d5
 patches:
   - target:
       group: apps
@@ -36,6 +36,10 @@ patches:
         value:
           - name: APP_ENV
             value: staging
+          # Prometheus metrics (API 0.61.0) on their own listener inside the pod. No Service
+          # port or ingress rule exposes it; see monitoring/ (not applied).
+          - name: METRICS_ADDR
+            value: ":9090"
           # Test site only: the sign-in code 1234 is also accepted. The API refuses to
           # start with this set outside development and staging.
           - name: AUTH_DEMO_CODE

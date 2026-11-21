@@ -1,0 +1,94 @@
+# RightProperty365 alert rules (API 0.61.0, FR-056, FR-065).
+#
+# NOT APPLIED ANYWHERE: no kustomization references this folder. Review it,
+# then add it to an environment (it needs the Prometheus Operator's
+# PrometheusRule CRD) or load the `groups` into a plain Prometheus.
+# Every metric comes from METRICS_ADDR on the api and worker pods (see
+# scrape-example.yaml); none is served on the public API port.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rightproperty365
+  labels:
+    app.kubernetes.io/part-of: rightproperty365
+spec:
+  groups:
+    - name: rightproperty365-api
+      rules:
+        - alert: RP365ApiErrorRateHigh
+          expr: |
+            sum(rate(rp365_http_requests_total{status="5xx"}[5m]))
+              / clamp_min(sum(rate(rp365_http_requests_total[5m])), 1e-9) > 0.02
+          for: 10m
+          labels: { severity: page }
+          annotations:
+            summary: More than 2% of API requests fail (5xx) for 10 minutes.
+        - alert: RP365ApiLatencyHigh
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(rp365_http_request_duration_seconds_bucket[5m]))) > 1.5
+          for: 15m
+          labels: { severity: warn }
+          annotations:
+            summary: The 95th percentile API latency is above 1.5 s for 15 minutes.
+        - alert: RP365ApiDown
+          expr: up{job="rightproperty365-api"} == 0
+          for: 5m
+          labels: { severity: page }
+          annotations:
+            summary: Prometheus cannot scrape an API pod.
+    - name: rightproperty365-queues
+      rules:
+        - alert: RP365OutboxBacklog
+          expr: rp365_outbox_oldest_pending_age_seconds > 300
+          for: 10m
+          labels: { severity: page }
+          annotations:
+            summary: An outbox event has waited more than 5 minutes (notifications are late; FSD target 30 s).
+        - alert: RP365DeadLetters
+          expr: sum(rp365_outbox_dead_letters) > 0 and sum(increase(rp365_outbox_dead_letters[1h])) > 0
+          labels: { severity: warn }
+          annotations:
+            summary: New outbox dead letters in the last hour.
+        - alert: RP365PushDeadDeliveries
+          expr: increase(rp365_push_deliveries{status="DEAD"}[1h]) > 10
+          labels: { severity: warn }
+          annotations:
+            summary: More than 10 push or in-app deliveries gave up in the last hour.
+        - alert: RP365RoutingExceptionsOpen
+          expr: rp365_routing_exceptions_open > 0
+          for: 30m
+          labels: { severity: warn }
+          annotations:
+            summary: Property requests nobody could receive have waited 30 minutes (Administration > Requests nobody could receive).
+    - name: rightproperty365-email
+      rules:
+        - alert: RP365EmailBounceSpike
+          expr: |
+            sum(rp365_email_delivery_events_last_hour{event_type="BOUNCED"}) >= 5
+              and sum(rp365_email_delivery_events_last_hour{event_type="BOUNCED"}) / clamp_min(sum(rp365_email_accepted_last_hour), 1) >= 0.05
+          labels: { severity: warn }
+          annotations:
+            summary: Email bounces are at least 5% of the email accepted in the last hour (Administration > Email delivery).
+        - alert: RP365EmailComplaintSpike
+          expr: sum(rp365_email_delivery_events_last_hour{event_type="COMPLAINED"}) >= 3
+          labels: { severity: page }
+          annotations:
+            summary: Three or more spam complaints in the last hour.
+    - name: rightproperty365-sweeps
+      rules:
+        - alert: RP365SweepStale
+          expr: time() - rp365_sweep_last_success_timestamp_seconds > 3 * 3600
+          labels: { severity: warn }
+          annotations:
+            summary: "A background sweep ({{ $labels.sweep }}) has not succeeded for 3 hours."
+        - alert: RP365SweepFailing
+          expr: increase(rp365_sweep_runs_total{result="error"}[1h]) >= 3
+          labels: { severity: warn }
+          annotations:
+            summary: "The {{ $labels.sweep }} sweep failed 3 or more times in the last hour."
+        - alert: RP365WorkerDown
+          expr: up{job="rightproperty365-worker"} == 0
+          for: 5m
+          labels: { severity: page }
+          annotations:
+            summary: Prometheus cannot scrape the worker.
