@@ -14,7 +14,7 @@ images:
     newTag: sha-b858d42e35b9f172e7efc59a29bbe5833e35cadb
   - name: rightproperty-api
     newName: ghcr.io/adminweighty/rightproperty365backend
-    newTag: sha-9e356d7bdad410a43faadb3926bb923368c60e92
+    newTag: sha-4b99ca3c22b1ca8009e5254e216a677a49410bce
 patches:
   - target:
       group: apps
