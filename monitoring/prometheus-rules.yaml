@@ -49,6 +49,12 @@ spec:
           labels: { severity: warn }
           annotations:
             summary: New outbox dead letters in the last hour.
+        - alert: RP365SearchIndexStale
+          expr: max(rp365_search_index_stale) == 1
+          for: 15m
+          labels: { severity: warn }
+          annotations:
+            summary: The search index mapping is older than the release; listing events wait. Run /app/reindex (deploy-and-rollback.md step 8).
         - alert: RP365PushDeadDeliveries
           expr: increase(rp365_push_deliveries{status="DEAD"}[1h]) > 10
           labels: { severity: warn }
